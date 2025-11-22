@@ -16,7 +16,7 @@ class SnakeEnv:
 
     def reset(self):
         self.snake = [[5, 5], [5, 6], [5, 7]]
-        self.direction = "up"
+        self.direction = "right"
         self.apple = [randint(0, self.grid_size - 1), randint(0, self.grid_size - 1)]
         self.done = False
         self.score = 0
