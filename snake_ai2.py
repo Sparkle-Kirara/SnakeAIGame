@@ -218,7 +218,7 @@ def play_ai_render():
     GREEN = (0, 255, 0)
 
     def font(size):
-        return pygame.font.Font("Fonts/Pixel Game.otf", size)
+        return pygame.font.Font("Pixel Game.otf", size)
 
     score_font = font(80)
     text_font = font(60)
