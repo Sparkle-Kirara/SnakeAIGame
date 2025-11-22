@@ -111,10 +111,10 @@ class SnakeEnv:
     #     return self.get_state(), reward, self.done
 
     def control(self, key):
-        if key == pygame.K_UP: self.direction = "up"
-        if key == pygame.K_DOWN: self.direction = "down"
-        if key == pygame.K_LEFT: self.direction = "left"
-        if key == pygame.K_RIGHT: self.direction = "left"
+        if key == pygame.K_UP or key == pygame.K_w: self.direction = "up"
+        if key == pygame.K_DOWN or key == pygame.K_s: self.direction = "down"
+        if key == pygame.K_LEFT or key == pygame.K_a: self.direction = "left"
+        if key == pygame.K_RIGHT or key == pygame.K_d: self.direction = "right"
 
 # ================= DQN Model =================
 class DQN(nn.Module):
@@ -130,7 +130,6 @@ class DQN(nn.Module):
 
     def forward(self, x):
         return self.model(x)
-
 
 # ================= Training Function =================
 def train_snake(episodes=500):
@@ -227,6 +226,17 @@ def play_ai_render():
     state = "menu"
     running = True
     while running and not env.done:
+        screen.fill(BLACK)
+        score = score_font.render(str(env.score), True, WHITE)
+
+        # Draw apple
+        pygame.draw.rect(screen, RED,
+                         (env.apple[0] * cell_size, env.apple[1] * cell_size, cell_size, cell_size))
+        # Draw snake
+        for seg in env.snake:
+            pygame.draw.rect(screen, GREEN,
+                             (seg[0] * cell_size, seg[1] * cell_size, cell_size, cell_size))
+
         if state == "menu":
             pos_x, pos_y = pygame.mouse.get_pos()
             screen.fill(BLACK)
@@ -246,7 +256,7 @@ def play_ai_render():
 
                     if pos_x >= 240 and pos_x <= 420 and pos_y >= 420 and pos_y <= 520:
                         state = "ai"
-                    if pos_x >= 450 and pos_x <= 520 and pos_y >= 420 and pos_y <= 520:
+                    if pos_x >= 450 and pos_x <= 630 and pos_y >= 420 and pos_y <= 520:
                         state = "player"
 
             pygame.draw.rect(screen, WHITE, (240, 420, 180, 100))
@@ -268,17 +278,6 @@ def play_ai_render():
             pygame.display.flip()
 
         elif state == "ai":
-            score = score_font.render(str(env.score), True, WHITE)
-            screen.fill(BLACK)
-
-            # Draw apple
-            pygame.draw.rect(screen, RED,
-                             (env.apple[0] * cell_size, env.apple[1] * cell_size, cell_size, cell_size))
-            # Draw snake
-            for seg in env.snake:
-                pygame.draw.rect(screen, GREEN,
-                                 (seg[0] * cell_size, seg[1] * cell_size, cell_size, cell_size))
-
             # AI move
             action = torch.argmax(model(torch.tensor(env.get_state()))).item()
             env.step(action)
@@ -294,23 +293,14 @@ def play_ai_render():
             clock.tick(10)
 
         elif state == "player":
-            score = score_font.render(str(env.score), True, WHITE)
-            screen.fill(BLACK)
-
-            # Draw apple
-            pygame.draw.rect(screen, RED,
-                             (env.apple[0] * cell_size, env.apple[1] * cell_size, cell_size, cell_size))
-            # Draw snake
-            for seg in env.snake:
-                pygame.draw.rect(screen, GREEN,
-                                 (seg[0] * cell_size, seg[1] * cell_size, cell_size, cell_size))
-
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
                     env.done = True
                 if event.type == pygame.KEYDOWN:
                     env.control(event.key)
+
+            env.step(-1)
 
             screen.blit(score, (screen_size/2 - 10, 100))
             pygame.display.flip()
