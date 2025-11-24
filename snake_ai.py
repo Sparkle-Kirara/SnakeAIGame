@@ -65,7 +65,7 @@ class SnakeEnv:
             if new_head == self.apple:
                 reward = 10
                 self.score += 1
-                self.speed += 0.4
+                self.speed += 0.3
                 print(f"Score: {self.score}")
                 self.apple = [randint(0, self.grid_size - 1), randint(0, self.grid_size - 1)]
             else:
@@ -451,7 +451,7 @@ def play_ai_render():
 
             if playing_count > 2:
                 if player_score > snake_score:
-                    if player_score >= 10:
+                    if player_score >= 8:
                         model_trained = "snake_dqn50k.pth"
                         model.load_state_dict(torch.load(model_trained))
 
