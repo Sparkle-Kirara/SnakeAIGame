@@ -22,6 +22,7 @@ class SnakeEnv:
         self.apple = [randint(0, self.grid_size - 1), randint(0, self.grid_size - 1)]
         self.done = False
         self.score = 0
+        self.speed = 10
         return self.get_state()
 
     def get_state(self):
@@ -64,6 +65,7 @@ class SnakeEnv:
             if new_head == self.apple:
                 reward = 10
                 self.score += 1
+                self.speed += 0.4
                 print(f"Score: {self.score}")
                 self.apple = [randint(0, self.grid_size - 1), randint(0, self.grid_size - 1)]
             else:
@@ -207,11 +209,12 @@ def train_snake(episodes=500):
 def play_ai_render():
     env = SnakeEnv()
     model = DQN(len(env.get_state()), 4)
-    model.load_state_dict(torch.load("snake_dqn50k.pth"))
+    model_trained = "snake_dqn30k.pth"
+    model.load_state_dict(torch.load(model_trained))
     model.eval()
 
     pygame.init()
-    pygame.display.set_caption("Snake Game But You're Not ")
+    pygame.display.set_caption("Snake Game But You're Not Controller")
 
     cell_size = 30
     x, y = 0, 0
@@ -236,6 +239,10 @@ def play_ai_render():
     text_font = font(60)
     bye_font = font(90)
     winner_font = font(110)
+    # --- DEFAULT COLORS ---
+    ai_color = WHITE
+    player_color = WHITE
+    bye_color = WHITE
 
     on_score = False
     drawing = False
@@ -278,28 +285,41 @@ def play_ai_render():
             player_btn = pygame.Rect(450, 420, 180, 100)
             bye_btn    = pygame.Rect(290, 550, 300, 100)
 
-            # --- DEFAULT COLORS ---
-            ai_color = WHITE
-            player_color = WHITE
-            bye_color = WHITE
-
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
                     env.done = True
-    
-                if ai_btn.collidepoint(mouse_pos):
-                    if event.type == pygame.MOUSEBUTTONDOWN:
-                        state = "ai_scene"
-                    
-                if player_btn.collidepoint(mouse_pos):
-                    if event.type == pygame.MOUSEBUTTONDOWN:
-                        state = "player_scene"
 
-                if bye_btn.collidepoint(mouse_pos):
-                    if event.type == pygame.MOUSEBUTTONDOWN:
-                        state = "bye_scene"
-                    
+                if ai_btn.collidepoint(mouse_pos) and event.type == pygame.MOUSEBUTTONDOWN:
+                    ai_color = GREY
+                elif ai_btn.collidepoint(mouse_pos) and event.type == pygame.MOUSEBUTTONUP:
+                    state = "ai_scene"
+                    ai_color = WHITE
+                elif not ai_btn.collidepoint(mouse_pos) and event.type == pygame.MOUSEBUTTONUP:
+                    ai_color = WHITE
+                
+                if playing_count > 1 and player_score > snake_score:
+                    if player_btn.collidepoint(mouse_pos) and event.type == pygame.MOUSEBUTTONDOWN:
+                        player_color = GREY
+                    elif player_btn.collidepoint(mouse_pos) and event.type == pygame.MOUSEBUTTONUP:
+                        player_color = WHITE
+                    elif not player_btn.collidepoint(mouse_pos) and event.type == pygame.MOUSEBUTTONUP:
+                        player_color = WHITE
+                else:
+                    if player_btn.collidepoint(mouse_pos) and event.type == pygame.MOUSEBUTTONDOWN:
+                        player_color = GREY
+                    elif player_btn.collidepoint(mouse_pos) and event.type == pygame.MOUSEBUTTONUP:
+                        state = "player_scene"
+                        player_color = WHITE
+                    elif not player_btn.collidepoint(mouse_pos) and event.type == pygame.MOUSEBUTTONUP:
+                        player_color = WHITE
+
+                if bye_btn.collidepoint(mouse_pos) and event.type == pygame.MOUSEBUTTONDOWN:
+                    bye_color = GREY
+                elif bye_btn.collidepoint(mouse_pos) and event.type == pygame.MOUSEBUTTONUP:
+                    state = "bye_scene"
+                elif not bye_btn.collidepoint(mouse_pos) and event.type == pygame.MOUSEBUTTONUP:
+                    bye_color = WHITE
 
             pygame.draw.rect(screen, ai_color, ai_btn)
             pygame.draw.rect(screen, player_color, player_btn)
@@ -352,7 +372,8 @@ def play_ai_render():
 
             screen.blit(score, (screen_size/2 - 10, 100))
             pygame.display.flip()
-            clock.tick(10)
+
+            clock.tick(env.speed)
 
         elif state == "player_scene":
             if env.score > player_score: player_score = env.score
@@ -368,7 +389,8 @@ def play_ai_render():
 
             screen.blit(score, (screen_size/2 - 10, 100))
             pygame.display.flip()
-            clock.tick(10)
+            
+            clock.tick(env.speed)
         
         elif state == "bye_scene":
             screen.fill(BLACK)
@@ -429,6 +451,10 @@ def play_ai_render():
 
             if playing_count > 2:
                 if player_score > snake_score:
+                    if player_score >= 10:
+                        model_trained = "snake_dqn50k.pth"
+                        model.load_state_dict(torch.load(model_trained))
+
                     player_wins = [
                         "Great job… finally!",
                         "Well done, about time.",
