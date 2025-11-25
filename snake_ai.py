@@ -9,6 +9,8 @@ from random import choice
 from collections import deque
 import textwrap
 
+from SnakeAIGame.test import end_ticks
+
 
 # ================= Snake Environment =================
 class SnakeEnv:
@@ -17,8 +19,8 @@ class SnakeEnv:
         self.reset()
 
     def reset(self):
-        self.snake = [[5, 5], [5, 6], [5, 7]]
-        self.direction = "right"
+        self.snake = [[randint(10, 20), randint(10, 20)]]
+        self.direction = choice(["up", "down", "left", "right"])
         self.apple = [randint(0, self.grid_size - 1), randint(0, self.grid_size - 1)]
         self.done = False
         self.score = 0
@@ -209,8 +211,16 @@ def train_snake(episodes=500):
 def play_ai_render():
     env = SnakeEnv()
     model = DQN(len(env.get_state()), 4)
-    model_trained = "snake_dqn30k.pth"
-    model.load_state_dict(torch.load(model_trained))
+
+    level1 = "snake_dqn10k.pth"
+    level2 = "snake_dqn20k.pth"
+    level3 = "snake_dqn30k.pth"
+    level4 = "snake_dqn40k.pth"
+    level5 = "snake_dqn50k.pth"
+    level6 = "snake_dqn60k.pth"
+    level = level1
+
+    model.load_state_dict(torch.load(level))
     model.eval()
 
     pygame.init()
@@ -298,7 +308,7 @@ def play_ai_render():
                 elif not ai_btn.collidepoint(mouse_pos) and event.type == pygame.MOUSEBUTTONUP:
                     ai_color = WHITE
                 
-                if playing_count > 1 and player_score > snake_score:
+                if playing_count > 2 and player_score > snake_score:
                     if player_btn.collidepoint(mouse_pos) and event.type == pygame.MOUSEBUTTONDOWN:
                         player_color = GREY
                     elif player_btn.collidepoint(mouse_pos) and event.type == pygame.MOUSEBUTTONUP:
@@ -393,6 +403,7 @@ def play_ai_render():
             clock.tick(env.speed)
         
         elif state == "bye_scene":
+            start_ticks = pygame.time.get_ticks()
             screen.fill(BLACK)
 
             all_phrases = [
@@ -440,6 +451,9 @@ def play_ai_render():
             pygame.event.pump()
             pygame.time.wait(2000)
 
+            print(f"{pygame.time.get_ticks()} - {start_ticks} = {pygame.time.get_ticks() - start_ticks}")
+            # if pygame.time.get_ticks() - start_ticks > 5:
+
             running = False
             env.done = True
 
@@ -449,11 +463,14 @@ def play_ai_render():
             screen.fill(BLACK)
             game_over = bye_font.render("Game Over!", True, WHITE)
 
-            if playing_count > 2:
+            if playing_count > 1:
                 if player_score > snake_score:
-                    if player_score >= 8:
-                        model_trained = "snake_dqn50k.pth"
-                        model.load_state_dict(torch.load(model_trained))
+                    if player_score >= 5: level = level3
+                    if player_score >= 10: level = level4
+                    if player_score >= 15: level = level5
+                    if player_score >= 20: level = level6
+                    if playing_count > 3 and player_score > snake_score: level = level3
+                    model.load_state_dict(torch.load(level))
 
                     player_wins = [
                         "Great job… finally!",
@@ -526,11 +543,13 @@ def play_ai_render():
             pygame.display.flip()
             pygame.event.pump()
             pygame.time.wait(3000)
-
+            # start_ticks = pygame.time.get_ticks()
+            # print(pygame.time.get_ticks() - start_ticks)
+            # if pygame.time.get_ticks() - start_ticks >= 3000:
             state = "menu_scene"
-            
-        if env.done == True:
             playing_count += 1
+
+        if env.done == True:
             on_score = True
             state = "score_scene"
             env.done = False
