@@ -9,9 +9,6 @@ from random import choice
 from collections import deque
 import textwrap
 
-from SnakeAIGame.test import end_ticks
-
-
 # ================= Snake Environment =================
 class SnakeEnv:
     def __init__(self, grid_size=30):
@@ -67,7 +64,7 @@ class SnakeEnv:
             if new_head == self.apple:
                 reward = 10
                 self.score += 1
-                self.speed += 0.3
+                self.speed += 0.4
                 print(f"Score: {self.score}")
                 self.apple = [randint(0, self.grid_size - 1), randint(0, self.grid_size - 1)]
             else:
@@ -141,6 +138,27 @@ class DQN(nn.Module):
     def forward(self, x):
         return self.model(x)
 
+import sys
+import os
+
+def resource_path(relative_path):
+    """ Lấy đường dẫn thực tế khi chạy từ .exe hoặc .py """
+    try:
+        # Khi chạy từ .exe (PyInstaller)
+        base_path = sys._MEIPASS
+    except Exception:
+        # Khi chạy từ .py
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+# --- SỬA DÒNG LOAD MODEL ---
+# ❌ Cũ (gây lỗi):
+# model = torch.load("snake_dqn10k.pth")
+
+# ✅ Mới (sẽ chạy được!):
+# model_path = resource_path("snake_dqn10k.pth")
+# model = torch.load(model_path, map_location='cpu')  # map_location để tránh lỗi GPU
+
 # ================= Training Function =================
 def train_snake(episodes=500):
     env = SnakeEnv()
@@ -212,19 +230,22 @@ def play_ai_render():
     env = SnakeEnv()
     model = DQN(len(env.get_state()), 4)
 
-    level1 = "snake_dqn10k.pth"
-    level2 = "snake_dqn20k.pth"
-    level3 = "snake_dqn30k.pth"
-    level4 = "snake_dqn40k.pth"
-    level5 = "snake_dqn50k.pth"
-    level6 = "snake_dqn60k.pth"
+    level1 = "Models/snake_dqn10k.pth"
+    level2 = "Models/snake_dqn20k.pth"
+    level3 = "Models/snake_dqn30k.pth"
+    level4 = "Models/snake_dqn40k.pth"
+    level5 = "Models/snake_dqn50k.pth"
+    level6 = "Models/snake_dqn60k.pth"
     level = level1
 
-    model.load_state_dict(torch.load(level))
+    model.load_state_dict(torch.load(resource_path(level), map_location='cpu'))
     model.eval()
 
     pygame.init()
     pygame.display.set_caption("Snake Game But You're Not Controller")
+
+    icon = pygame.image.load(resource_path("Assets/cute_snake-removebg-preview.ico"))
+    pygame.display.set_icon(icon)
 
     cell_size = 30
     x, y = 0, 0
@@ -243,7 +264,7 @@ def play_ai_render():
     GREEN = (0, 255, 0)
 
     def font(size):
-        return pygame.font.Font("Pixel Game.otf", size)
+        return pygame.font.Font(resource_path("Assets/Pixel Game.otf"), size)
 
     score_font = font(80)
     text_font = font(60)
@@ -470,7 +491,7 @@ def play_ai_render():
                     if player_score >= 15: level = level5
                     if player_score >= 20: level = level6
                     if playing_count > 3 and player_score > snake_score: level = level3
-                    model.load_state_dict(torch.load(level))
+                    model.load_state_dict(torch.load(resource_path(level), map_location="cpu"))
 
                     player_wins = [
                         "Great job… finally!",
